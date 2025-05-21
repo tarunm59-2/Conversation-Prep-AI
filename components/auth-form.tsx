@@ -11,19 +11,25 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Form, FormField, FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {useRouter} from "next/navigation";
+import { useRouter } from "next/navigation";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { signIn, signUp } from "@/lib/actions/auth.actions";
+import { auth } from "@/firebase/client";
 
 type FormType = "sign-in" | "sign-up";
 
 // Schema generator based on form type
 const authFormSchema = (type: FormType) =>
-    z.object({
-        name: type === "sign-in"
-            ? z.string().min(3).max(20)
-            : z.string().min(3).max(20).optional(),
-        email: z.string().email(),
-        password: z.string().min(3).max(20),
-    });
+    type === "sign-up"
+        ? z.object({
+            name: z.string().min(3).max(20),
+            email: z.string().email(),
+            password: z.string().min(3).max(20),
+        })
+        : z.object({
+            email: z.string().email(),
+            password: z.string().min(3).max(20),
+        });
 
 const AuthForm = ({ kind }: { kind: FormType }) => {
     const formSchema = authFormSchema(kind);
@@ -37,18 +43,55 @@ const AuthForm = ({ kind }: { kind: FormType }) => {
         },
     });
 
-    const onSubmit = (values: z.infer<typeof formSchema>) => {
+    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+        console.log(kind);
         try {
             if (kind === "sign-up") {
+                const { name, email, password } = values;
+                const userCredentials = await createUserWithEmailAndPassword(auth, email, password);
+                const result = await signUp({ uid: userCredentials.user.uid, name: name!, email, password });
+                if (!result?.success) {
+                    toast.error("Error creating account");
+                    return;
+                }
                 toast.success("Account created");
                 router.push("/sign-in");
             } else {
+                const { email, password } = values;
+                console.log(email, password);
+                const userCredentials = await signInWithEmailAndPassword(auth, email, password);
+                if (!userCredentials.user) {
+                    toast.error("Error signing in");
+                    return;
+                }
+                const idToken = await userCredentials.user.getIdToken();
+                if (!idToken) {
+                    toast.error("Error signing in");
+                    return;
+                }
+                const signInResult = await signIn({ email, idToken });
+
+                // Check if sign-in was successful
+                if (signInResult && !signInResult.success) {
+                    toast.error(signInResult.message || "Error signing in");
+                    return;
+                }
+
                 toast.success("Signed in");
                 router.push("/");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Error submitting");
+            // More specific error handling
+            if (error.code === 'auth/user-not-found') {
+                toast.error("No account found with this email");
+            } else if (error.code === 'auth/wrong-password') {
+                toast.error("Incorrect password");
+            } else if (error.code === 'auth/invalid-email') {
+                toast.error("Invalid email address");
+            } else {
+                toast.error("Error submitting");
+            }
         }
     };
 
@@ -113,8 +156,15 @@ const AuthForm = ({ kind }: { kind: FormType }) => {
                         )}
                     />
 
-                    <Button className="btn" type="submit">
-                        {isSignin() ? "Sign in" : "Sign up"}
+                    <Button
+                        className="btn"
+                        type="submit"
+                        disabled={form.formState.isSubmitting}
+                    >
+                        {form.formState.isSubmitting
+                            ? (isSignin() ? "Signing in..." : "Signing up...")
+                            : (isSignin() ? "Sign in" : "Sign up")
+                        }
                     </Button>
                 </form>
             </Form>
