@@ -1,0 +1,135 @@
+"use client";
+
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Form, FormField, FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {useRouter} from "next/navigation";
+
+type FormType = "sign-in" | "sign-up";
+
+// Schema generator based on form type
+const authFormSchema = (type: FormType) =>
+    z.object({
+        name: type === "sign-in"
+            ? z.string().min(3).max(20)
+            : z.string().min(3).max(20).optional(),
+        email: z.string().email(),
+        password: z.string().min(3).max(20),
+    });
+
+const AuthForm = ({ kind }: { kind: FormType }) => {
+    const formSchema = authFormSchema(kind);
+    const router = useRouter();
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            name: "",
+            email: "",
+            password: "",
+        },
+    });
+
+    const onSubmit = (values: z.infer<typeof formSchema>) => {
+        try {
+            if (kind === "sign-up") {
+                toast.success("Account created");
+                router.push("/sign-in");
+            } else {
+                toast.success("Signed in");
+                router.push("/");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Error submitting");
+        }
+    };
+
+    const isSignin = () => kind === "sign-in";
+
+    return (
+        <div className="card-border lg:min-w-[566px]">
+            <div className="flex flex-col gap-6 card py-14 px-10">
+                <div className="flex flex-row gap-2 justify-center">
+                    <Image src="/logo.png" alt="logo" width={30} height={38} />
+                    <h2 className="text-primary-100">Conversations</h2>
+                </div>
+                <h3>Conversations prepping with AI</h3>
+            </div>
+
+            <Form {...form}>
+                <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-6 w-full mt-4 form"
+                >
+                    {!isSignin() && (
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Name</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Your Name" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    )}
+
+                    <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="you@example.com" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                    <Input type="password" placeholder="••••••" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <Button className="btn" type="submit">
+                        {isSignin() ? "Sign in" : "Sign up"}
+                    </Button>
+                </form>
+            </Form>
+
+            <p className="text-center mt-4">
+                {isSignin() ? "No account yet?" : "Already have an account?"}
+                <Link
+                    href={isSignin() ? "/sign-up" : "/sign-in"}
+                    className="font-bold text-user-primary ml-1"
+                >
+                    {isSignin() ? "Sign up" : "Sign in"}
+                </Link>
+            </p>
+        </div>
+    );
+};
+
+export default AuthForm;
