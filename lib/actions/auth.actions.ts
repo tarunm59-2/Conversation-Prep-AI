@@ -94,4 +94,30 @@ export async function signIn(params: SignInParams) {
 }
 
 
-export async function getCurrentUser
+export async function getCurrentUser(): Promise <User | null> {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session')?.value;
+    if (!sessionCookie) {
+        return null;
+    }
+    try {
+        const decodedToken = await auth.verifySessionCookie(sessionCookie,true);
+        const user = await db.collection("users").doc(decodedToken.uid).get();
+        if (!user.exists) {
+            return null;
+        }
+        return {
+            ... user.data(),
+            id: user.id,
+        } as User
+
+    } catch (error: any) {
+        console.error("Error getting current user:", error);
+        return null;
+    }
+}
+
+export async function isAuthenticated() {
+    const user = await getCurrentUser();
+    return !!user;
+}
