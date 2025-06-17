@@ -92,7 +92,7 @@ const Agent = ({
 // Replace the handleGenerateFeedback function
         const handleGenerateFeedback = async (messages: SavedMessage[]) => {
             try {
-                const response = await fetch('/api/feedback', {
+                const response = await fetch('https://conversation-prep-ai.vercel.app/api/vapi/feedback', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
