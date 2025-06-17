@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { vapi } from "@/lib/vapi.sdk";
 import { generator, interviewer } from "@/constants";
+import {createFeedback} from "@/lib/actions/general.action";
 
 
 enum CallStatus {
@@ -30,6 +31,8 @@ interface AgentProps {
     questions?: string[];
 }
 
+
+
 const Agent = ({
                    userName,
                    userId,
@@ -43,7 +46,7 @@ const Agent = ({
     const [messages, setMessages] = useState<SavedMessage[]>([]);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [lastMessage, setLastMessage] = useState<string>("");
-
+    console.log(userId)
     useEffect(() => {
         const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
         const onCallEnd = () => setCallStatus(CallStatus.FINISHED);
@@ -76,11 +79,54 @@ const Agent = ({
         };
     }, []);
 
+
+
     useEffect(() => {
-        if(callStatus==='FINISHED'){
-            router.push("/");
+        if (messages.length > 0) {
+            setLastMessage(messages[messages.length - 1].content);
         }
-    }, [messages,callStatus,type,userId]);
+
+// Replace the import
+// import {createFeedback} from "@/lib/actions/general.action"; // Remove this
+
+// Replace the handleGenerateFeedback function
+        const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+            try {
+                const response = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        interviewId: interviewId!,
+                        userId: userId!,
+                        transcript: messages,
+                        feedbackId,
+                    }),
+                });
+
+                const { success, feedbackId: id } = await response.json();
+
+                if (success && id) {
+                    router.push(`/interview/${interviewId}/feedback`);
+                } else {
+                    console.log("Error saving feedback");
+                    router.push("/");
+                }
+            } catch (error) {
+                console.error("Error creating feedback:", error);
+                router.push("/");
+            }
+        };
+
+        if (callStatus === CallStatus.FINISHED) {
+            if (type === "generate") {
+                router.push("/");
+            } else {
+                handleGenerateFeedback(messages);
+            }
+        }
+    }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
 
     const handleCall = async () => {
         setCallStatus(CallStatus.CONNECTING);
@@ -122,7 +168,7 @@ const Agent = ({
 
     const latestMessage = messages[messages.length - 1]?.content || "";
     const isCallInactiveOrFinished = callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED;
-    console.log(userId);
+
     return (
         <>
             <div className="call-view">

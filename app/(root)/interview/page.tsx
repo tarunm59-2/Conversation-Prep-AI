@@ -6,7 +6,7 @@ const Page = async () => {
     const user = await getCurrentUser();
 
 
-
+    console.log(user);
     return (
         <>
             <h3>Conversation Generator</h3>
