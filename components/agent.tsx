@@ -122,6 +122,7 @@ const Agent = ({
 
     const latestMessage = messages[messages.length - 1]?.content || "";
     const isCallInactiveOrFinished = callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED;
+    console.log(userId);
     return (
         <>
             <div className="call-view">

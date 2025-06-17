@@ -8,7 +8,7 @@ export async function GET () {
 }
 export async function POST (request: Request) {
     const {type,role,level,techstack,amount,userid} = await request.json()
-    console.log(techstack)
+    console.log(userid)
     try {
         const {text: questions} = await generateText({
             model: google('gemini-2.0-flash-001'),
@@ -16,10 +16,10 @@ export async function POST (request: Request) {
         });
         const interview = {
             questions: JSON.parse(questions),
-            role,
-            level,
+            role:role,
+            level:level,
             techstack: techstack.split(','),
-            userid,
+            userid: userid,
             finalized: true,
             coverImage: getRandomInterviewCover(),
             createdAt: new Date().toISOString()
