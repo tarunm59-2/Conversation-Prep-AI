@@ -8,11 +8,11 @@ export async function GET () {
 }
 export async function POST (request: Request) {
     const {type,role,level,techstack,amount,userid} = await request.json()
-    console.log(userid)
+    console.log(amount)
     try {
         const {text: questions} = await generateText({
             model: google('gemini-2.0-flash-001'),
-            prompt: 'Prepare questions for a job interview. The job is for a specific ${role}, the questions should be ${type} and according to job experience ${level}. The questions should be related to ${techstack}. The questions should be ${amount} questions long. please only return the questions and not additional text, the questions are going to be used by a voice assistanct, and they need to be formatted like ["Question1","Question2".....] also no using characters that can break a voice assistant'
+            prompt: 'Prepare questions for a job interview. The job is for a specific ${role} role and the questions must specifically pertain to that only, the questions should be ${type} and according to job experience ${level}. The questions should be related to ${techstack}  technologies. There should only be  ${amount} questions in the interview, no more. please only return the questions and not additional text, the questions are going to be used by a voice assistanct, and they need to be formatted like ["Question1","Question2".....] also no using characters that can break a voice assistant'
         });
         const interview = {
             questions: JSON.parse(questions),
