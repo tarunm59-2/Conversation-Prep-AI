@@ -9,6 +9,7 @@ import { vapi } from "@/lib/vapi.sdk";
 import { generator, interviewer } from "@/constants";
 import {createFeedback} from "@/lib/actions/general.action";
 
+import { useRef } from "react";
 
 enum CallStatus {
     INACTIVE = "INACTIVE",
@@ -46,10 +47,34 @@ const Agent = ({
     const [messages, setMessages] = useState<SavedMessage[]>([]);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [lastMessage, setLastMessage] = useState<string>("");
+    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+
     console.log(userId)
     useEffect(() => {
-        const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
-        const onCallEnd = () => setCallStatus(CallStatus.FINISHED);
+        const onCallStart = async () => {
+            setCallStatus(CallStatus.ACTIVE);
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                setVideoStream(stream);
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            } catch (err) {
+                console.error("Failed to start webcam:", err);
+            }
+        };
+
+        const onCallEnd = () => {
+            setCallStatus(CallStatus.FINISHED);
+
+            // Stop video stream
+            if (videoStream) {
+                videoStream.getTracks().forEach((track) => track.stop());
+                setVideoStream(null);
+            }
+        };
 
         const onMessage = (message: any) => {
             if (message.type === "transcript" && message.transcriptType === "final") {
@@ -77,8 +102,7 @@ const Agent = ({
             vapi.off("speech-end", onSpeechEnd);
             vapi.off("error", onError);
         };
-    }, []);
-
+    }, [videoStream]);
 
 
     useEffect(() => {
@@ -190,12 +214,14 @@ const Agent = ({
                 {/* User Profile Card */}
                 <div className="card-border">
                     <div className="card-content">
-                        <Image
-                            src="/user-avatar.png"
-                            alt="User Avatar"
-                            width={120}
-                            height={120}
-                            className="rounded-full object-cover size-[120px]"
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted
+                            width={100}
+                            height={100}
+                            className="rounded object-cover"
                         />
                         <h3>{userName}</h3>
                     </div>
