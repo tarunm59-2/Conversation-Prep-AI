@@ -1,50 +1,29 @@
 import React from "react";
 import Agent from "@/components/agent";
 import { getCurrentUser } from "@/lib/actions/auth.actions";
-import {getInterviewById} from "@/lib/actions/general.action";
-import {redirect} from "next/navigation";
-import {getRandomInterviewCover} from "@/lib/utils";
-import Image from "next/image";
-import DisplayTechIcons from "@/components/display-tech-icons";
+import { getInterviewById } from "@/lib/actions/general.action";
+import { redirect } from "next/navigation";
 
-const Page = async ({params}: RouteParams) => {
-    const { id } = await params;
+const Page = async ({ params }: { params: { id: string } }) => {
+    const { id } = params;
     const interview = await getInterviewById(id);
     const user = await getCurrentUser();
+
     if (!interview) {
-        redirect('/')
+        redirect("/");
     }
 
     return (
-        <>
-            <div className  = "flex flex-row gap-4 justify-between">
-                <div className="flex flex-row gap-4 items-center max-sm:flex-col">
-                    <div className="flex flex-row gap-4 items-center">
-                        <Image
-                            src={getRandomInterviewCover()}
-                            alt="cover-image"
-                            width={40}
-                            height={40}
-                            className="rounded-full object-cover size-[40px]"
-                        />
-                        <h3 className="capitalize">{interview.role} Interview</h3>
-                    </div>
-                    <DisplayTechIcons techStack={interview.techstack}/>
-
-                    <p className="bg-dark-200 px-4 py-2 rounded-lg h-fit">
-                        {interview.type}
-                    </p>
-                </div>
-                <Agent
-                    userName={user?.name!}
-                    userId={user?.id}
-                    interviewId={id}
-                    type="interview"
-                    questions={interview.questions}
-              
-                />
-            </div>
-        </>
+        <div className="flex flex-col items-center justify-center py-8 px-4">
+            <h2 className="text-2xl font-semibold mb-4">Interview Assistant</h2>
+            <Agent
+                userName={user?.name!}
+                userId={user?.id}
+                interviewId={id}
+                type="interview"
+                questions={interview.questions}
+            />
+        </div>
     );
 };
 
