@@ -47,6 +47,7 @@ export async function createFeedback(params: CreateFeedbackParams) {
 
         // Add code section if candidateCode exists
         if (candidateCode) {
+            console.log(candidateCode);
             prompt += `
 
         ${candidateCode.heading}:
@@ -55,7 +56,7 @@ export async function createFeedback(params: CreateFeedbackParams) {
         \`\`\`${candidateCode.language}
         ${candidateCode.code}
         \`\`\`
-
+        
         Please evaluate the code quality, logic, efficiency, and best practices in addition to the conversation.`;
         }
 
