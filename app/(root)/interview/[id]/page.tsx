@@ -22,6 +22,8 @@ const Page = async ({ params }: { params: { id: string } }) => {
                 interviewId={id}
                 type="interview"
                 questions={interview.questions}
+                role = {interview.role}
+
             />
         </div>
     );

@@ -28,8 +28,13 @@ interface Interview {
 interface CreateFeedbackParams {
   interviewId: string;
   userId: string;
-  transcript: { role: string; content: string }[];
+  transcript: SavedMessage[];
   feedbackId?: string;
+  candidateCode?: {
+    heading: string;
+    language: string;
+    code: string;
+  };
 }
 
 interface User {
