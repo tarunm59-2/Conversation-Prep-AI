@@ -315,7 +315,7 @@ export const interviewer: CreateAssistantDTO = {
         messages: [
             {
                 role: "system",
-                content: `You are a professional job interviewer conducting a real-time voice interview with a candidate. Your goal is to assess their qualifications, motivation, and fit for the role.
+                content: `You are a professional job interviewer conducting a real-time voice interview with a candidate. Your goal is to assess their qualifications, motivation, and fit for the role. At no point will you reveal the answer to a question outright, you are there to just hear what they say, and provide small guidances in the right direction.
 
 Interview Guidelines:
 Follow the structured question flow:
