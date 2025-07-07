@@ -23,8 +23,14 @@ export async function getFeedbackByInterviewId(
     if (querySnapshot.empty) return null;
 
     const feedbackDoc = querySnapshot.docs[0];
-    return { id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback;
+    const feedbackData = { id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback;
+
+    // Delete the document after fetching
+    await feedbackDoc.ref.delete();
+
+    return feedbackData;
 }
+
 
 export async function createFeedback(params: CreateFeedbackParams) {
     const { interviewId, userId, transcript, feedbackId, candidateCode } = params;
