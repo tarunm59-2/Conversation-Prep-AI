@@ -47,6 +47,7 @@ export async function createFeedback(params: CreateFeedbackParams) {
 
         // Add code section if candidateCode exists
         if (candidateCode) {
+
             console.log(candidateCode);
             prompt += `
 
