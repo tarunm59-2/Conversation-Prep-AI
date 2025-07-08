@@ -27,7 +27,7 @@ const Page = async () => {
                     <h2>Get conversation ready</h2>
                     <p className="text-lg">Practice questions</p>
                     <Button asChild className="btn-primary max-sm:w-full">
-                        <Link href="/interview">Start a convo</Link>
+                        <Link href="/interview">Setup your own interview!</Link>
                     </Button>
                     <Image
                         src="/robot.png"

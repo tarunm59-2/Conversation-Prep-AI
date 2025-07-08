@@ -39,7 +39,7 @@ const InterviewCard = ({id,userId,role,type,techstack,createdAt}:InterviewCardPr
                     <p> Icons</p>
                     <Button asChild className="btn-primary">
                         <Link href={feedback ? `/interview/${id}/feedback` : `/interview/${id}`}>
-                            {feedback? 'Check-res' : 'see convo'}
+                            {feedback? 'Check-res' : 'Take your interview!'}
                         </Link>
                     </Button>
                 </div>
