@@ -17,7 +17,7 @@ const InterviewCard = ({id,userId,role,type,techstack,createdAt}:InterviewCardPr
                     <div className="absolute top-0 right-0 w-fit px-4 py-2 rounded-bl-lg bg-light-800 ">
                         <p className = "badge-text">{normaizedType}</p>
                     </div>
-                    <Image src={getRandomInterviewCover()} alt="cover image" width={90} height={90}  className = "rounded-full object-fit size-[90px]"/>
+                    <Image src="tech.svg" alt="cover image" width={90} height={90}  className = "rounded-full object-fit size-[90px]"/>
                     <h3 className="mt-5 capitalize">{role} Conversation</h3>
                     <div className="flex flex-row gap-5 mt-3">
                         <div className="flex flex-row gap-2">
@@ -30,13 +30,11 @@ const InterviewCard = ({id,userId,role,type,techstack,createdAt}:InterviewCardPr
                         </div>
 
                     </div>
-                    <p className="line-clamp-2 mt-5">
-                        {feedback?.finalAssessment || 'No feedback yet'}
-                    </p>
+
 
                 </div>
                 <div className="flex flex-row justify-between ">
-                    <p> Icons</p>
+
                     <Button asChild className="btn-primary">
                         <Link href={feedback ? `/interview/${id}/feedback` : `/interview/${id}`}>
                             {feedback? 'Check-res' : 'Take your interview!'}
@@ -44,7 +42,7 @@ const InterviewCard = ({id,userId,role,type,techstack,createdAt}:InterviewCardPr
                     </Button>
                 </div>
             </div>
-            InterviewCard</div>
+            </div>
 
     )
 }
