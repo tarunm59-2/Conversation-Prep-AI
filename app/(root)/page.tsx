@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import InterviewCard from "@/components/interview-card";
+import ResumeUploadButton from "@/components/ResumeUploadButton"; // ADD THIS
 import {
     getCurrentUser,
     getInterviewByUserId,
@@ -29,6 +30,7 @@ const Page = async () => {
                     <Button asChild className="btn-primary max-sm:w-full">
                         <Link href="/interview">Setup your own interview!</Link>
                     </Button>
+                    <ResumeUploadButton /> {/* ADD THIS */}
                     <Image
                         src="/robot.png"
                         alt="robo"
@@ -62,7 +64,7 @@ const Page = async () => {
                     ) : (
                         <p>None yet</p>
                     )}
-                </div> {/* This closing tag was missing */}
+                </div>
             </section>
         </>
     );
