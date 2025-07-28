@@ -1,4 +1,4 @@
-/ app/api/resume/route.ts
+// app/api/resume/route.ts
 import pdf from 'pdf-parse';
 import { ChatOpenAI } from '@langchain/openai';
 import { PromptTemplate } from '@langchain/core/prompts';
@@ -173,6 +173,6 @@ export async function OPTIONS() {
     });
 }
 
-export async function GET () {
-    return Response.json({success:true,data:"THANK YOU"},{status:200})
+export async function GET() {
+    return Response.json({ success: true, data: "THANK YOU" }, { status: 200 });
 }
