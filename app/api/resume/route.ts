@@ -5,6 +5,8 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { loadSummarizationChain } from 'langchain/chains';
 import { Document } from '@langchain/core/documents';
 import { TokenTextSplitter } from 'langchain/text_splitter';
+import { getRandomInterviewCover } from "@/lib/utils";
+import { db } from "@/firebase/admin";
 
 const PROMPT_TEMPLATE = `
 You are an expert at generating interview-style walkthrough questions based on a candidate's resume.
@@ -65,6 +67,32 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
     return data.text;
 }
 
+function getDefaultLevel(): string {
+    return 'Mid Level'; // Default level for all resume-based interviews
+}
+
+function extractTechStack(resumeText: string): string[] {
+    const text = resumeText.toLowerCase();
+    const commonTechnologies = [
+        'javascript', 'typescript', 'python', 'java', 'c++', 'c#', 'php', 'ruby', 'go', 'rust',
+        'react', 'vue', 'angular', 'node.js', 'express', 'django', 'flask', 'spring', 'laravel',
+        'mysql', 'postgresql', 'mongodb', 'redis', 'elasticsearch',
+        'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'jenkins', 'git', 'github', 'gitlab',
+        'html', 'css', 'sass', 'tailwind', 'bootstrap',
+        'tensorflow', 'pytorch', 'scikit-learn', 'pandas', 'numpy'
+    ];
+
+    const foundTech = commonTechnologies.filter(tech => text.includes(tech));
+    return foundTech.slice(0, 10); // Return max 10 technologies
+}
+
+function selectRandomQuestions(questions: string[], count: number = 10): string[] {
+    if (questions.length <= count) return questions;
+
+    const shuffled = [...questions].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+}
+
 async function processResumeText(resumeText: string): Promise<string[]> {
     const splitter = new TokenTextSplitter({
         encodingName: 'gpt2',
@@ -112,6 +140,14 @@ export async function POST(request: Request) {
 
         const formData = await request.formData();
         const file = formData.get('resume') as File;
+        const userid = formData.get('userid') as string;
+
+        if (!userid) {
+            return new Response(JSON.stringify({ error: 'User ID is required' }), {
+                status: 400,
+                headers: corsHeaders(),
+            });
+        }
 
         if (!file || file.type !== 'application/pdf') {
             return new Response(JSON.stringify({ error: 'Only PDF files are supported' }), {
@@ -137,21 +173,43 @@ export async function POST(request: Request) {
             });
         }
 
-        const questions = await processResumeText(resumeText);
+        // Generate all questions first
+        const allQuestions = await processResumeText(resumeText);
 
-        if (questions.length === 0) {
+        if (allQuestions.length === 0) {
             return new Response(JSON.stringify({ error: 'No questions could be generated' }), {
                 status: 400,
                 headers: corsHeaders(),
             });
         }
 
+        // Set default level and extract tech stack from resume
+        const level = getDefaultLevel();
+        const techstack = extractTechStack(resumeText);
+
+        // Select 10 random questions
+        const selectedQuestions = selectRandomQuestions(allQuestions, 10);
+
+        // Create interview object
+        const interview = {
+            questions: selectedQuestions,
+            role: 'resume',
+            level: level,
+            techstack: techstack,
+            userid: userid,
+            finalized: true,
+            coverImage: getRandomInterviewCover(),
+            createdAt: new Date().toISOString()
+        };
+
+        // Add to database
+        const docRef = await db.collection("interviews").add(interview);
+
         return new Response(
             JSON.stringify({
                 success: true,
-                questions,
-                totalQuestions: questions.length,
-                message: `Generated ${questions.length} interview questions.`,
+                data: { ...interview, id: docRef.id },
+                message: `Generated interview with ${selectedQuestions.length} questions from ${allQuestions.length} total questions.`,
             }),
             {
                 status: 200,
@@ -159,7 +217,11 @@ export async function POST(request: Request) {
             }
         );
     } catch (err: any) {
-        return new Response(JSON.stringify({ error: err.message }), {
+        console.error('API Error:', err);
+        return new Response(JSON.stringify({
+            error: err.message || 'An error occurred while processing the resume',
+            success: false
+        }), {
             status: 500,
             headers: corsHeaders(),
         });
@@ -174,5 +236,5 @@ export async function OPTIONS() {
 }
 
 export async function GET() {
-    return Response.json({ success: true, data: "THANK YOU" }, { status: 200 });
+    return Response.json({ success: true, data: "Resume Interview API ready" }, { status: 200 });
 }
