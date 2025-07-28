@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { getCurrentUser } from "@/lib/actions/auth.actions";
 
 const ResumeUploadButton = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -9,7 +10,23 @@ const ResumeUploadButton = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [uploadStatus, setUploadStatus] = useState('');
     const [dragActive, setDragActive] = useState(false);
+    const [user, setUser] = useState(null);
+    const [interviewResult, setInterviewResult] = useState(null);
     const fileInputRef = useRef(null);
+
+    // Get user on component mount
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const currentUser = await getCurrentUser();
+                setUser(currentUser);
+            } catch (error) {
+                console.error('Error fetching user:', error);
+                setUploadStatus('Error: Please log in to upload resume');
+            }
+        };
+        fetchUser();
+    }, []);
 
     const handleFileSelect = (file) => {
         if (file && file.type === 'application/pdf') {
@@ -52,34 +69,45 @@ const ResumeUploadButton = () => {
             return;
         }
 
+        if (!user || !user.uid) {
+            setUploadStatus('Error: Please log in to upload resume');
+            return;
+        }
+
         setIsUploading(true);
-        setUploadStatus('');
+        setUploadStatus('Processing resume and generating interview questions...');
 
         try {
-            // Simulate upload process - replace with your actual upload logic
             const formData = new FormData();
             formData.append('resume', selectedFile);
+            formData.append('userid', user.uid);
 
-            // Example API call - replace with your endpoint
-            // const response = await fetch('/api/upload-resume', {
-            //     method: 'POST',
-            //     body: formData,
-            // });
+            const response = await fetch('/api/resume', {
+                method: 'POST',
+                body: formData,
+            });
 
-            // Simulate upload delay
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            const result = await response.json();
 
-            // Simulate success
-            setUploadStatus('Resume uploaded successfully!');
+            if (result.success) {
+                setUploadStatus('Interview created successfully!');
+                setInterviewResult(result.data);
 
-            // Reset after success
-            setTimeout(() => {
-                setIsOpen(false);
-                setSelectedFile(null);
-                setUploadStatus('');
-            }, 1500);
+                // Show success for a moment, then close
+                setTimeout(() => {
+                    setIsOpen(false);
+                    setSelectedFile(null);
+                    setUploadStatus('');
+                    setInterviewResult(null);
+                    // Optionally redirect to interview page
+                    // window.location.href = `/interview/${result.data.id}`;
+                }, 2000);
+            } else {
+                setUploadStatus(`Error: ${result.error || 'Failed to create interview'}`);
+            }
 
         } catch (error) {
+            console.error('Upload error:', error);
             setUploadStatus('Upload failed. Please try again.');
         } finally {
             setIsUploading(false);
@@ -91,6 +119,7 @@ const ResumeUploadButton = () => {
         setUploadStatus('');
         setIsUploading(false);
         setDragActive(false);
+        setInterviewResult(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -132,6 +161,15 @@ const ResumeUploadButton = () => {
 
                     {/* Content */}
                     <div className="px-6 py-6">
+                        {/* User Status */}
+                        {user && (
+                            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p className="text-sm text-blue-800">
+                                    <span className="font-medium">Logged in as:</span> {user.email || user.displayName || 'User'}
+                                </p>
+                            </div>
+                        )}
+
                         {/* Drag and Drop Area */}
                         <div
                             className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
@@ -196,11 +234,28 @@ const ResumeUploadButton = () => {
                         {/* Status Message */}
                         {uploadStatus && (
                             <div className={`mt-4 p-3 rounded-lg text-sm ${
-                                uploadStatus.includes('successfully')
+                                uploadStatus.includes('successfully') || uploadStatus.includes('created')
                                     ? 'bg-green-100 text-green-800 border border-green-200'
-                                    : 'bg-red-100 text-red-800 border border-red-200'
+                                    : uploadStatus.includes('Error') || uploadStatus.includes('failed')
+                                        ? 'bg-red-100 text-red-800 border border-red-200'
+                                        : 'bg-blue-100 text-blue-800 border border-blue-200'
                             }`}>
                                 {uploadStatus}
+                            </div>
+                        )}
+
+                        {/* Interview Result */}
+                        {interviewResult && (
+                            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                <h4 className="font-medium text-green-900 mb-2">Interview Created!</h4>
+                                <div className="text-sm text-green-800 space-y-1">
+                                    <p><span className="font-medium">Role:</span> {interviewResult.role}</p>
+                                    <p><span className="font-medium">Level:</span> {interviewResult.level}</p>
+                                    <p><span className="font-medium">Questions:</span> {interviewResult.questions?.length || 0}</p>
+                                    {interviewResult.techstack?.length > 0 && (
+                                        <p><span className="font-medium">Technologies:</span> {interviewResult.techstack.join(', ')}</p>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -217,16 +272,16 @@ const ResumeUploadButton = () => {
                         </Button>
                         <Button
                             onClick={handleUpload}
-                            disabled={!selectedFile || isUploading}
+                            disabled={!selectedFile || isUploading || !user}
                             className="min-w-24 bg-blue-600 hover:bg-blue-700"
                         >
                             {isUploading ? (
                                 <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Uploading...
+                                    Processing...
                                 </div>
                             ) : (
-                                'Upload'
+                                'Create Interview'
                             )}
                         </Button>
                     </div>
