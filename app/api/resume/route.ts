@@ -1,6 +1,6 @@
-// app/api/resume/route.ts
+/ app/api/resume/route.ts
 import pdf from 'pdf-parse';
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { ChatOpenAI } from '@langchain/openai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { loadSummarizationChain } from 'langchain/chains';
 import { Document } from '@langchain/core/documents';
@@ -66,52 +66,45 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
 }
 
 async function processResumeText(resumeText: string): Promise<string[]> {
-    try {
-        const splitter = new TokenTextSplitter({
-            encodingName: 'gpt2',
-            chunkSize: 10000,
-            chunkOverlap: 200,
-        });
+    const splitter = new TokenTextSplitter({
+        encodingName: 'gpt2',
+        chunkSize: 10000,
+        chunkOverlap: 200,
+    });
 
-        const chunks = await splitter.splitText(resumeText);
-        const documents = chunks.map(chunk => new Document({ pageContent: chunk }));
+    const chunks = await splitter.splitText(resumeText);
+    const documents = chunks.map(chunk => new Document({ pageContent: chunk }));
 
-        // Replace ChatOpenAI with ChatGoogleGenerativeAI
-        const llm = new ChatGoogleGenerativeAI({
-            temperature: 0.3,
-            model: 'gemini-1.5-flash',
-            apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-            maxRetries: 2,
-        });
+    const llm = new ChatOpenAI({
+        temperature: 0.3,
+        modelName: 'gpt-3.5-turbo',
+        openAIApiKey: process.env.OPENAI_API_KEY,
+    });
 
-        const promptQuestions = PromptTemplate.fromTemplate(PROMPT_TEMPLATE);
-        const refinePromptQuestions = PromptTemplate.fromTemplate(REFINE_TEMPLATE);
+    const promptQuestions = PromptTemplate.fromTemplate(PROMPT_TEMPLATE);
+    const refinePromptQuestions = PromptTemplate.fromTemplate(REFINE_TEMPLATE);
 
-        const chain = loadSummarizationChain(llm, {
-            type: 'refine',
-            verbose: true,
-            questionPrompt: promptQuestions,
-            refinePrompt: refinePromptQuestions,
-        });
+    const chain = loadSummarizationChain(llm, {
+        type: 'refine',
+        verbose: true,
+        questionPrompt: promptQuestions,
+        refinePrompt: refinePromptQuestions,
+    });
 
-        const result = await chain.invoke({ input_documents: documents });
-        const questions = result.output_text;
+    const result = await chain.invoke({ input_documents: documents });
+    const questions = result.output_text;
 
-        return questions
-            .split('\n')
-            .map(q => q.trim())
-            .filter(q => q.length > 10 && (q.endsWith('?') || q.endsWith('.')))
-            .map(q => q.replace(/^\d+\.\s*/, ''));
-    } catch (error) {
-        console.error('Error in processResumeText:', error);
-        throw new Error(`Failed to process resume: ${error.message}`);
-    }
+    return questions
+        .split('\n')
+        .map(q => q.trim())
+        .filter(q => q.length > 10 && (q.endsWith('?') || q.endsWith('.')))
+        .map(q => q.replace(/^\d+\.\s*/, ''));
 }
 
 export async function POST(request: Request) {
     try {
-        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-            return new Response(JSON.stringify({ error: 'Google Generative AI API key missing' }), {
+        if (!process.env.OPENAI_API_KEY) {
+            return new Response(JSON.stringify({ error: 'OpenAI API key missing' }), {
                 status: 500,
                 headers: corsHeaders(),
             });
@@ -158,7 +151,7 @@ export async function POST(request: Request) {
                 success: true,
                 questions,
                 totalQuestions: questions.length,
-                message: `Generated ${questions.length} interview questions using Gemini.`,
+                message: `Generated ${questions.length} interview questions.`,
             }),
             {
                 status: 200,
@@ -166,11 +159,7 @@ export async function POST(request: Request) {
             }
         );
     } catch (err: any) {
-        console.error('API Error:', err);
-        return new Response(JSON.stringify({
-            error: err.message || 'An error occurred while processing the resume',
-            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
-        }), {
+        return new Response(JSON.stringify({ error: err.message }), {
             status: 500,
             headers: corsHeaders(),
         });
@@ -184,6 +173,6 @@ export async function OPTIONS() {
     });
 }
 
-export async function GET() {
-    return Response.json({ success: true, data: "Resume API with Gemini and LangChain ready" }, { status: 200 });
+export async function GET () {
+    return Response.json({success:true,data:"THANK YOU"},{status:200})
 }
