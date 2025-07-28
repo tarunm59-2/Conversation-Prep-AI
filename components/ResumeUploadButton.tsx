@@ -1,32 +1,16 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { getCurrentUser } from "@/lib/actions/auth.actions";
 
-const ResumeUploadButton = () => {
+const ResumeUploadButton = ({ user }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadStatus, setUploadStatus] = useState('');
     const [dragActive, setDragActive] = useState(false);
-    const [user, setUser] = useState(null);
     const [interviewResult, setInterviewResult] = useState(null);
     const fileInputRef = useRef(null);
-
-    // Get user on component mount
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const currentUser = await getCurrentUser();
-                setUser(currentUser);
-            } catch (error) {
-                console.error('Error fetching user:', error);
-                setUploadStatus('Error: Please log in to upload resume');
-            }
-        };
-        fetchUser();
-    }, []);
 
     const handleFileSelect = (file) => {
         if (file && file.type === 'application/pdf') {

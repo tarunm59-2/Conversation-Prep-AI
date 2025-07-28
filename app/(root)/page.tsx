@@ -30,7 +30,7 @@ const Page = async () => {
                     <Button asChild className="btn-primary max-sm:w-full">
                         <Link href="/interview">Setup your own interview!</Link>
                     </Button>
-                    <ResumeUploadButton /> {/* ADD THIS */}
+                    <ResumeUploadButton user={user} /> {/* ADD THIS */}
                     <Image
                         src="/robot.png"
                         alt="robo"
