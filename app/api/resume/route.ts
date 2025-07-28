@@ -1,6 +1,6 @@
 // app/api/resume/route.ts
 import pdf from 'pdf-parse';
-import { ChatOpenAI } from '@langchain/openai';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { loadSummarizationChain } from 'langchain/chains';
 import { Document } from '@langchain/core/documents';
@@ -75,10 +75,11 @@ async function processResumeText(resumeText: string): Promise<string[]> {
     const chunks = await splitter.splitText(resumeText);
     const documents = chunks.map(chunk => new Document({ pageContent: chunk }));
 
-    const llm = new ChatOpenAI({
+    // Replace ChatOpenAI with ChatGoogleGenerativeAI
+    const llm = new ChatGoogleGenerativeAI({
         temperature: 0.3,
-        modelName: 'gpt-3.5-turbo',
-        openAIApiKey: process.env.OPENAI_API_KEY,
+        modelName: 'gemini-2.0-flash-001',
+        apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     });
 
     const promptQuestions = PromptTemplate.fromTemplate(PROMPT_TEMPLATE);
@@ -103,8 +104,8 @@ async function processResumeText(resumeText: string): Promise<string[]> {
 
 export async function POST(request: Request) {
     try {
-        if (!process.env.OPENAI_API_KEY) {
-            return new Response(JSON.stringify({ error: 'OpenAI API key missing' }), {
+        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+            return new Response(JSON.stringify({ error: 'Google Generative AI API key missing' }), {
                 status: 500,
                 headers: corsHeaders(),
             });
@@ -151,7 +152,7 @@ export async function POST(request: Request) {
                 success: true,
                 questions,
                 totalQuestions: questions.length,
-                message: `Generated ${questions.length} interview questions.`,
+                message: `Generated ${questions.length} interview questions using Gemini.`,
             }),
             {
                 status: 200,
@@ -159,7 +160,11 @@ export async function POST(request: Request) {
             }
         );
     } catch (err: any) {
-        return new Response(JSON.stringify({ error: err.message }), {
+        console.error('API Error:', err);
+        return new Response(JSON.stringify({
+            error: err.message || 'An error occurred while processing the resume',
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        }), {
             status: 500,
             headers: corsHeaders(),
         });
@@ -173,6 +178,6 @@ export async function OPTIONS() {
     });
 }
 
-export async function GET () {
-    return Response.json({success:true,data:"THANK YOU"},{status:200})
+export async function GET() {
+    return Response.json({ success: true, data: "Resume API with Gemini and LangChain ready" }, { status: 200 });
 }
