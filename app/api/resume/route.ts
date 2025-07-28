@@ -66,40 +66,46 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
 }
 
 async function processResumeText(resumeText: string): Promise<string[]> {
-    const splitter = new TokenTextSplitter({
-        encodingName: 'gpt2',
-        chunkSize: 10000,
-        chunkOverlap: 200,
-    });
+    try {
+        const splitter = new TokenTextSplitter({
+            encodingName: 'gpt2',
+            chunkSize: 10000,
+            chunkOverlap: 200,
+        });
 
-    const chunks = await splitter.splitText(resumeText);
-    const documents = chunks.map(chunk => new Document({ pageContent: chunk }));
+        const chunks = await splitter.splitText(resumeText);
+        const documents = chunks.map(chunk => new Document({ pageContent: chunk }));
 
-    // Replace ChatOpenAI with ChatGoogleGenerativeAI
-    const llm = new ChatGoogleGenerativeAI({
-        temperature: 0.3,
-        modelName: 'gemini-2.0-flash-001',
-        apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    });
+        // Replace ChatOpenAI with ChatGoogleGenerativeAI
+        const llm = new ChatGoogleGenerativeAI({
+            temperature: 0.3,
+            model: 'gemini-1.5-flash',
+            apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+            maxRetries: 2,
+        });
 
-    const promptQuestions = PromptTemplate.fromTemplate(PROMPT_TEMPLATE);
-    const refinePromptQuestions = PromptTemplate.fromTemplate(REFINE_TEMPLATE);
+        const promptQuestions = PromptTemplate.fromTemplate(PROMPT_TEMPLATE);
+        const refinePromptQuestions = PromptTemplate.fromTemplate(REFINE_TEMPLATE);
 
-    const chain = loadSummarizationChain(llm, {
-        type: 'refine',
-        verbose: true,
-        questionPrompt: promptQuestions,
-        refinePrompt: refinePromptQuestions,
-    });
+        const chain = loadSummarizationChain(llm, {
+            type: 'refine',
+            verbose: true,
+            questionPrompt: promptQuestions,
+            refinePrompt: refinePromptQuestions,
+        });
 
-    const result = await chain.invoke({ input_documents: documents });
-    const questions = result.output_text;
+        const result = await chain.invoke({ input_documents: documents });
+        const questions = result.output_text;
 
-    return questions
-        .split('\n')
-        .map(q => q.trim())
-        .filter(q => q.length > 10 && (q.endsWith('?') || q.endsWith('.')))
-        .map(q => q.replace(/^\d+\.\s*/, ''));
+        return questions
+            .split('\n')
+            .map(q => q.trim())
+            .filter(q => q.length > 10 && (q.endsWith('?') || q.endsWith('.')))
+            .map(q => q.replace(/^\d+\.\s*/, ''));
+    } catch (error) {
+        console.error('Error in processResumeText:', error);
+        throw new Error(`Failed to process resume: ${error.message}`);
+    }
 }
 
 export async function POST(request: Request) {
