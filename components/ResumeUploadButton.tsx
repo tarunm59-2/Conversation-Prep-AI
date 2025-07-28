@@ -53,8 +53,15 @@ const ResumeUploadButton = ({ user }) => {
             return;
         }
 
-        if (!user || !user.uid) {
-            setUploadStatus('Error: Please log in to upload resume');
+        // Debug: log the user object
+        console.log('User object:', user);
+
+        // Check for user ID in different possible properties
+        const userId = user?.uid || user?.id || user?.$id || user?.userId;
+        console.log('User ID found:', userId);
+
+        if (!user || !userId) {
+            setUploadStatus(`Error: Please log in to upload resume. User: ${JSON.stringify(user)}`);
             return;
         }
 
@@ -64,7 +71,9 @@ const ResumeUploadButton = ({ user }) => {
         try {
             const formData = new FormData();
             formData.append('resume', selectedFile);
-            formData.append('userid', user.uid);
+            formData.append('userid', userId);
+
+            console.log('Uploading with userId:', userId);
 
             const response = await fetch('/api/resume', {
                 method: 'POST',
@@ -149,7 +158,10 @@ const ResumeUploadButton = ({ user }) => {
                         {user && (
                             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                 <p className="text-sm text-blue-800">
-                                    <span className="font-medium">Logged in as:</span> {user.email || user.displayName || 'User'}
+                                    <span className="font-medium">Logged in as:</span> {user.email || user.displayName || user.name || 'User'}
+                                </p>
+                                <p className="text-xs text-blue-600 mt-1">
+                                    User ID: {user.uid || user.id || user.$id || user.userId || 'Not found'}
                                 </p>
                             </div>
                         )}
@@ -256,7 +268,7 @@ const ResumeUploadButton = ({ user }) => {
                         </Button>
                         <Button
                             onClick={handleUpload}
-                            disabled={!selectedFile || isUploading || !user}
+                            disabled={!selectedFile || isUploading || !user || !(user?.uid || user?.id || user?.$id || user?.userId)}
                             className="min-w-24 bg-blue-600 hover:bg-blue-700"
                         >
                             {isUploading ? (
